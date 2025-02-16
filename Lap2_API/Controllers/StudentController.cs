@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Lap2_API.Dtos;
 using Lap2_API.Models;
+using Lap2_API.UnitOfWorks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,19 +11,19 @@ namespace Lap2_API.Controllers
     [ApiController]
     public class StudentController : ControllerBase
     {
-        private readonly ITIContext db;
+        private readonly UnitOfWork unitOfWork;
         private readonly IMapper map;
 
-        public StudentController(ITIContext db,IMapper _map)
+        public StudentController(UnitOfWork unitOfWork,IMapper _map)
         {
-            this.db = db;
+            this.unitOfWork = unitOfWork;
             map = _map;
         }
 
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<Student> students=db.Students.ToList();
+            List<Student> students=unitOfWork.studentRepo.GetAll();
 
            List<ReadStudentDto> dtos=map.Map < List<ReadStudentDto>>(students);
 
@@ -31,7 +32,7 @@ namespace Lap2_API.Controllers
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            Student student =db.Students.FirstOrDefault(n=>n.St_Id==id);
+            Student student =unitOfWork.studentRepo.GetById(id);
           ReadStudentDto dto=  map.Map<ReadStudentDto>(student);
             return Ok(dto);
         }
@@ -41,8 +42,8 @@ namespace Lap2_API.Controllers
         {
             if (dto == null) return BadRequest();
            Student sts= map.Map<Student>(dto);
-            db.Students.Add(sts);
-            db.SaveChanges();
+           unitOfWork.studentRepo.Add(sts);
+            unitOfWork.Save();
             return Ok(dto);
         }
 
@@ -52,8 +53,8 @@ namespace Lap2_API.Controllers
             if (!ModelState.IsValid) return BadRequest();
             Student sts = map.Map<Student>(dto);
             sts.St_Id = id;
-            db.Entry(sts).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-            db.SaveChanges();
+           unitOfWork.studentRepo.Update(sts);
+            unitOfWork.Save();
 
             return Ok(dto);
 
@@ -61,10 +62,10 @@ namespace Lap2_API.Controllers
         [HttpDelete]
         public IActionResult DeleteById(int id) 
         {
-            Student sts=db.Students.FirstOrDefault(n=>n.St_Id == id);
+            Student sts=unitOfWork.studentRepo.GetById(id);
             if(sts == null) return BadRequest();
-            db.Students.Remove(sts);
-            db.SaveChanges();
+            unitOfWork.studentRepo.Delete(id);
+            unitOfWork.Save();
             return Ok("Deleted Succes");
         }
     }

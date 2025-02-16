@@ -1,6 +1,7 @@
 ﻿
 using Lap2_API.MapperConfig;
 using Lap2_API.Models;
+using Lap2_API.UnitOfWorks;
 using Microsoft.EntityFrameworkCore;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -32,6 +33,8 @@ namespace Lap2_API
                     builder.AllowAnyHeader();
                 });
             });
+
+            builder.Services.AddScoped<UnitOfWork>();
 
             var app = builder.Build();
 

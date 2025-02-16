@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Lap2_API.Dtos;
 using Lap2_API.Models;
+using Lap2_API.UnitOfWorks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,26 +11,26 @@ namespace Lap2_API.Controllers
     [ApiController]
     public class DepartmentController : ControllerBase
     {
-        private readonly ITIContext db;
+        private readonly UnitOfWork unitOfWork;
         private readonly IMapper map;
 
-        public DepartmentController(ITIContext db,IMapper _map)
+        public DepartmentController(UnitOfWork unitOfWork,IMapper _map)
         {
-            this.db = db;
+            this.unitOfWork = unitOfWork;
             map = _map;
         }
 
         [HttpGet]
         public IActionResult GetAll() 
         {
-            List<Department> list = db.Departments.ToList();
+            List<Department> list =unitOfWork.DeptRepo.GetAll();
           List<ReadDeparmentDto> dtos=  map.Map<List<ReadDeparmentDto>>(list);
             return Ok(dtos);
         }
         [HttpGet("{id}")]
         public IActionResult GetById(int id) 
         {
-            Department dept =db.Departments.FirstOrDefault(n=>n.Dept_Id == id);
+            Department dept =unitOfWork.DeptRepo.GetById(id);
 
            ReadDeparmentDto dto= map.Map<ReadDeparmentDto>(dept);
             return Ok(dto);
@@ -44,8 +45,8 @@ namespace Lap2_API.Controllers
                     return BadRequest("Invalid input data.");
 
                 Department dept = map.Map<Department>(dto);
-                db.Departments.Add(dept);
-                int result = db.SaveChanges();
+                unitOfWork.DeptRepo.Add(dept);
+                int result = unitOfWork.Save();
 
                 if (result > 0)
                     return Ok(dept);
@@ -65,18 +66,18 @@ namespace Lap2_API.Controllers
             Department dept = map.Map<Department>(dto);
             dept.Dept_Id= id;
 
-                db.Entry(dept).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                db.SaveChanges();
+            unitOfWork.DeptRepo.Update(dept);
+            unitOfWork.Save();
 
             return Ok(dto);
         }
         [HttpDelete("{id}")]
         public IActionResult DeleteDepartment(int id) 
         { 
-            Department dpt =db.Departments.FirstOrDefault(n=>n.Dept_Id==id);
+             Department dpt=  unitOfWork.DeptRepo.GetById(id);
             if (dpt == null) return NotFound();
-            db.Departments.Remove(dpt);
-            db.SaveChanges();
+            unitOfWork.DeptRepo.Delete(id);
+            unitOfWork.Save();
             
             return Ok("Succes");
         }
